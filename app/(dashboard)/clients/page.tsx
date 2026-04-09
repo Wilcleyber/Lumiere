@@ -12,7 +12,7 @@ export default async function ClientsPage() {
 
   return (
     <div className="space-y-12">
-      {/* HEADER - Estilo Lumière Profissional */}
+      {/* HEADER */}
       <div className="border-b border-slate-200 pb-6">
         <h1 className="text-4xl font-black text-slate-900 tracking-tighter">
           Clientes
@@ -22,7 +22,7 @@ export default async function ClientsPage() {
         </p>
       </div>
 
-      {/* FORM CARD - Com profundidade e foco */}
+      {/* FORM CARD */}
       <section className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-2 h-6 bg-slate-900 rounded-full"></div>
@@ -40,7 +40,8 @@ export default async function ClientsPage() {
           </span>
         </div>
         
-        {clients?.length === 0 ? (
+        {/* Usando optional chaining (?.) para evitar erro de 'null' */}
+        {!clients || clients.length === 0 ? (
           <div className="py-20 text-center border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
             <p className="text-slate-400 font-bold italic text-lg">
               Sua lista de contatos está vazia. Comece a expandir seu negócio!
@@ -54,7 +55,6 @@ export default async function ClientsPage() {
                 className="group bg-white border border-slate-100 rounded-3xl p-6 flex flex-col md:flex-row md:items-center justify-between transition-all hover:shadow-2xl hover:border-slate-300"
               >
                 <div className="flex items-center gap-6">
-                  {/* Avatar Minimalista com as iniciais do cliente */}
                   <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 font-black text-xl border border-slate-100 group-hover:bg-slate-900 group-hover:text-white group-hover:border-slate-900 transition-all duration-300 shadow-inner">
                     {client.name.substring(0, 2).toUpperCase()}
                   </div>
@@ -72,9 +72,9 @@ export default async function ClientsPage() {
                   </div>
                 </div>
 
-                {/* Ações com estilo de luxo */}
+                {/* Ações com a correção da Arrow Function no action */}
                 <div className="flex items-center gap-4 mt-6 md:mt-0">
-                  <form action={deleteClientAction.bind(null, client.id)}>
+                  <form action={async () => { await deleteClientAction(client.id); }}>
                     <button className="text-[10px] font-black tracking-widest uppercase py-3 px-6 rounded-xl border border-slate-100 text-slate-400 hover:text-red-600 hover:bg-red-50 hover:border-red-100 transition-all active:scale-90">
                       Remover Cliente
                     </button>
