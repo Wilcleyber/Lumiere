@@ -57,7 +57,7 @@ export default async function AppointmentsPage() {
           </div>
         ) : (
           <div className="grid gap-4">
-            {appointments.map((appt) => {
+            {appointments?.map((appt) => {
               const isExpired = new Date(appt.date) < new Date();
 
               return (
