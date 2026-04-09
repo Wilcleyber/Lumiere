@@ -109,7 +109,7 @@ export default async function AppointmentsPage() {
                   {/* PAINEL DE AÇÕES - Muito mais robusto */}
                   <div className="flex items-center gap-4 mt-4 md:mt-0">
                     <div className="flex gap-2 p-1 bg-white/50 rounded-2xl border border-slate-200 shadow-inner">
-                      <form action={updateAppointmentStatus.bind(null, appt.id, "confirmed")}>
+                      <form action={async () => { await updateAppointmentStatus(appt.id, "confirmed"); }}>
                         <button
                           title="Marcar como Concluído"
                           className="w-12 h-12 flex items-center justify-center rounded-xl bg-white text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all border border-emerald-100 hover:border-emerald-600 shadow-sm active:scale-90"
@@ -118,7 +118,7 @@ export default async function AppointmentsPage() {
                         </button>
                       </form>
 
-                      <form action={updateAppointmentStatus.bind(null, appt.id, "canceled")}>
+                      <form action={async () => { await updateAppointmentStatus(appt.id, "canceled"); }}>
                         <button
                           title="Cancelar"
                           className="w-12 h-12 flex items-center justify-center rounded-xl bg-white text-rose-500 hover:bg-rose-500 hover:text-white transition-all border border-rose-100 hover:border-rose-500 shadow-sm active:scale-90"
@@ -128,7 +128,7 @@ export default async function AppointmentsPage() {
                       </form>
                     </div>
 
-                    <form action={deleteAppointmentAction.bind(null, appt.id)}>
+                    <form action={async () => { await deleteAppointmentAction(appt.id); }}>
                       <button
                         className="w-10 h-10 flex items-center justify-center text-slate-300 hover:text-red-500 transition-all hover:bg-red-50 rounded-xl"
                         title="Remover permanentemente"
