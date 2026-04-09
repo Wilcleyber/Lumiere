@@ -22,3 +22,4 @@ Este projeto utiliza o que há de mais moderno no ecossistema Web:
 1. **Clone o repositório:**
    ```bash
    git clone [https://github.com/SEU_USUARIO/lumiere.git](https://github.com/SEU_USUARIO/lumiere.git)
+# Lumiere
