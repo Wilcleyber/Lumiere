@@ -4,6 +4,8 @@ import {
   updateAppointmentStatus,
 } from "@/lib/actions/appointments";
 import { AppointmentForm } from "@/components/forms/appointment-form";
+import { CompleteAppointmentModal } from "@/components/modals/complete-appointment-modal";
+import { ActionButton } from "@/components/ui/action-button";
 
 export default async function AppointmentsPage() {
   const supabase = createClient();
@@ -12,12 +14,14 @@ export default async function AppointmentsPage() {
     .from("appointments")
     .select(`
       *,
-      clients ( name )
+      clients ( name ),
+      services ( name, price )
     `)
     .eq("status", "pending")
     .order("date", { ascending: true });
 
   const { data: clients } = await supabase.from("clients").select("id, name");
+  const { data: services } = await supabase.from("services").select("*");
 
   const safeAppointments = appointments || [];
 
@@ -29,22 +33,22 @@ export default async function AppointmentsPage() {
           Agendamentos
         </h1>
         <p className="text-slate-500 font-medium italic">
-          Controle o fluxo de atendimentos com precisão Lumière.
+          Gestão inteligente da agenda Lumière.
         </p>
       </div>
 
-      {/* FORM - Novo Agendamento */}
-      <section className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
+      {/* NOVO AGENDAMENTO */}
+      <section className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-2 h-6 bg-slate-900 rounded-full"></div>
           <h2 className="text-xl font-bold text-slate-800">
             Novo Agendamento
           </h2>
         </div>
-        <AppointmentForm clients={clients || []} />
+        <AppointmentForm clients={clients || []} services={services || []} />
       </section>
 
-      {/* LISTA DE AGENDAMENTOS */}
+      {/* LISTA */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-black text-slate-800 tracking-tight">
@@ -56,7 +60,7 @@ export default async function AppointmentsPage() {
         </div>
 
         {safeAppointments.length === 0 ? (
-          <div className="py-20 text-center border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
+          <div className="py-20 text-center border-2 border-dashed border-slate-200 rounded-[2rem] bg-slate-50/50">
             <p className="text-slate-400 font-bold italic text-lg">
               Sua agenda está livre para novos clientes! ☕
             </p>
@@ -67,56 +71,48 @@ export default async function AppointmentsPage() {
               const date = new Date(appt.date);
               const isExpired = date < new Date();
 
-              // Correção: usamos bind com 'as any' para satisfazer o TS
-              const handleConfirm = updateAppointmentStatus.bind(
-                null,
-                appt.id,
-                "confirmed"
-              ) as any;
-              const handleCancel = updateAppointmentStatus.bind(
-                null,
-                appt.id,
-                "canceled"
-              ) as any;
-              const handleDelete = deleteAppointmentAction.bind(
-                null,
-                appt.id
-              ) as any;
-
               return (
                 <div
                   key={appt.id}
-                  className={`group rounded-3xl p-6 flex flex-col md:flex-row md:items-center justify-between transition-all border ${
+                  className={`group rounded-[2rem] p-6 flex flex-col md:flex-row md:items-center justify-between transition-all border ${
                     isExpired
                       ? "border-orange-200 bg-orange-50/30"
-                      : "bg-white border-slate-100 hover:border-slate-300 shadow-sm hover:shadow-xl"
+                      : "bg-white border-slate-100 hover:shadow-xl hover:border-slate-300"
                   }`}
                 >
-                  {/* INFO DO CLIENTE E HORÁRIO */}
+                  {/* INFO */}
                   <div className="flex items-center gap-6">
+                    {/* DATA */}
                     <div
-                      className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center border shadow-inner ${
+                      className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center border ${
                         isExpired
                           ? "bg-orange-100 border-orange-200 text-orange-700"
-                          : "bg-slate-50 border-slate-100 text-slate-400 group-hover:bg-slate-900 group-hover:text-white group-hover:border-slate-900 transition-all duration-300"
+                          : "bg-slate-50 border-slate-100 text-slate-400 group-hover:bg-slate-900 group-hover:text-white transition-all"
                       }`}
                     >
-                      <span className="text-[10px] font-black uppercase tracking-tighter">
+                      <span className="text-[10px] font-black uppercase">
                         {date.toLocaleString("pt-BR", { month: "short" })}
                       </span>
-                      <span className="text-2xl font-black leading-none">
+                      <span className="text-2xl font-black">
                         {date.getDate()}
                       </span>
                     </div>
 
+                    {/* DETALHES */}
                     <div>
-                      <p className="font-extrabold text-2xl text-slate-900 tracking-tight mb-1">
-                        {/* @ts-ignore */}
+                      <p className="font-extrabold text-2xl text-slate-900 mb-1">
                         {appt.clients?.name}
                       </p>
-
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-black text-slate-600 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200">
+                      <p className="text-sm text-slate-600 font-medium">
+                        {appt.services?.name
+                          ? `${appt.services.name} — ${new Intl.NumberFormat(
+                              "pt-BR",
+                              { style: "currency", currency: "BRL" }
+                            ).format(appt.services.price)}`
+                          : "Serviço não definido"}
+                      </p>
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="text-xs font-black text-slate-600 bg-slate-100 px-2 py-1 rounded-lg">
                           🕒{" "}
                           {date.toLocaleTimeString("pt-BR", {
                             hour: "2-digit",
@@ -124,14 +120,13 @@ export default async function AppointmentsPage() {
                           })}
                         </span>
                         {isExpired && (
-                          <span className="text-[10px] font-black text-orange-600 uppercase tracking-widest bg-orange-100 px-2 py-1 rounded-lg">
+                          <span className="text-[10px] font-black text-orange-600 uppercase bg-orange-100 px-2 py-1 rounded-lg">
                             Atrasado
                           </span>
                         )}
                       </div>
-
                       {appt.notes && (
-                        <p className="text-sm text-slate-400 font-medium italic mt-2">
+                        <p className="text-sm text-slate-400 italic mt-2">
                           "{appt.notes}"
                         </p>
                       )}
@@ -141,38 +136,25 @@ export default async function AppointmentsPage() {
                   {/* ACTIONS */}
                   <div className="flex items-center gap-3 mt-6 md:mt-0">
                     <div className="flex gap-2 p-1.5 bg-slate-50 rounded-2xl border border-slate-200">
-                      {/* BOTAO CONFIRMAR */}
-                      <form action={handleConfirm}>
-                        <button
-                          type="submit"
-                          title="Confirmar Atendimento"
-                          className="w-11 h-11 flex items-center justify-center rounded-xl bg-white text-emerald-600 border border-emerald-100 hover:bg-emerald-600 hover:text-white transition-all shadow-sm active:scale-90"
-                        >
-                          ✔
-                        </button>
-                      </form>
+                      <CompleteAppointmentModal appointment={appt} />
 
-                      {/* BOTAO CANCELAR */}
-                      <form action={handleCancel}>
-                        <button
-                          type="submit"
-                          title="Cancelar Horário"
-                          className="w-11 h-11 flex items-center justify-center rounded-xl bg-white text-red-500 border border-red-100 hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-90"
-                        >
-                          ✖
-                        </button>
-                      </form>
+                      {/* BOTÃO CANCELAR */}
+                      <ActionButton
+                        action={updateAppointmentStatus}
+                        id={appt.id}
+                        args={["canceled"]}
+                        icon="✖"
+                        className="w-11 h-11 flex items-center justify-center rounded-xl bg-white text-red-500 border border-red-100 hover:bg-red-500 hover:text-white transition-all"
+                      />
                     </div>
 
-                    {/* BOTAO DELETAR */}
-                    <form action={handleDelete}>
-                      <button
-                        type="submit"
-                        className="w-11 h-11 flex items-center justify-center text-slate-300 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all active:scale-90"
-                      >
-                        🗑️
-                      </button>
-                    </form>
+                    {/* BOTÃO DELETAR */}
+                    <ActionButton
+                      action={deleteAppointmentAction}
+                      id={appt.id}
+                      icon="🗑️"
+                      className="w-11 h-11 flex items-center justify-center text-slate-300 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all"
+                    />
                   </div>
                 </div>
               );
