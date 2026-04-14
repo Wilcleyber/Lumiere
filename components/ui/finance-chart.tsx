@@ -12,13 +12,23 @@ import {
 } from "recharts";
 
 interface FinanceChartProps {
-  data: { date: string; value: number }[];
+  // Tornamos opcional e garantimos que se não vier nada, usamos um array vazio
+  data?: { date: string; value: number }[];
 }
 
-export function FinanceChart({ data }: FinanceChartProps) {
+export function FinanceChart({ data = [] }: FinanceChartProps) {
+  // Se não houver dados, mostramos um estado amigável em vez de um gráfico vazio
+  if (data.length === 0) {
+    return (
+      <div className="h-[300px] w-full bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl flex items-center justify-center">
+        <p className="text-slate-400 font-medium italic">Aguardando dados de faturamento...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="h-[300px] w-full bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl">
-      <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 ml-2">
+      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 ml-2">
         Fluxo de Receita (7 dias)
       </h3>
       
@@ -29,33 +39,41 @@ export function FinanceChart({ data }: FinanceChartProps) {
             dataKey="date" 
             axisLine={false} 
             tickLine={false} 
-            tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 'bold' }}
+            tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: '700' }}
             dy={10}
           />
           <YAxis 
             axisLine={false} 
             tickLine={false} 
-            tick={{ fill: '#94a3b8', fontSize: 12 }} 
+            tick={{ fill: '#94a3b8', fontSize: 11 }} 
           />
           <Tooltip 
             cursor={{ fill: '#f8fafc' }}
             contentStyle={{ 
-              borderRadius: '16px', 
+              borderRadius: '20px', 
               border: 'none', 
-              boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
-              fontWeight: 'bold'
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
+              fontSize: '12px'
             }}
+            // Formata o valor dentro do Tooltip para Real R$
+            formatter={(value) =>
+  new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(Number(value || 0))
+}
           />
           <Bar 
             dataKey="value" 
-            radius={[10, 10, 10, 10]} 
-            barSize={40}
+            radius={[8, 8, 8, 8]} 
+            barSize={32} // Reduzi um pouco para dar mais "ar" entre as barras
           >
             {data.map((entry, index) => (
               <Cell 
                 key={`cell-${index}`} 
+                // A última barra (hoje) fica com destaque escuro, as outras cinza claro
                 fill={index === data.length - 1 ? '#0f172a' : '#e2e8f0'} 
-                className="hover:fill-emerald-500 transition-all duration-300"
+                className="hover:fill-emerald-500 transition-all duration-300 cursor-pointer"
               />
             ))}
           </Bar>

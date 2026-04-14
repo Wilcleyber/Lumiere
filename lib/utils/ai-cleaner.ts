@@ -1,12 +1,10 @@
-// lib/utils/ai-cleaner.ts
+function sanitizeFinanceData(data: any[]) {
+  if (!data) return [];
 
-export function sanitizeFinanceData(appts: any[]) {
-  if (!appts) return [];
-
-  return appts.map(a => ({
-    d: new Date(a.completed_at).toLocaleDateString("pt-BR", { weekday: 'short', day: '2-digit' }), // Ex: "seg, 13"
-    s: a.services?.name?.substring(0, 15), // Nome do serviço encurtado
-    v: a.final_price, // Valor
-    c: a.clients?.name?.split(' ')[0] // Só o primeiro nome do cliente
+  return data.map(item => ({
+    v: Number(item.final_price) || 0,
+    d: item.completed_at
+      ? new Date(item.completed_at).toISOString().split("T")[0]
+      : "",
   }));
 }

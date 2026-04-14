@@ -2,12 +2,15 @@ import { createClient } from "@/lib/supabase/server";
 import { FinanceChart } from "@/components/ui/finance-chart";
 import Link from "next/link";
 
-// 🧠 Função de limpeza (ESSENCIAL pra IA + economia de tokens)
+// 🧠 Função ULTRA-compacta (economia de tokens)
 function sanitizeFinanceData(data: any[]) {
+  if (!data) return [];
+
   return data.map(item => ({
-    price: Number(item.final_price) || 0,
-    date: item.completed_at,
-    service: item.services?.name || "",
+    v: Number(item.final_price) || 0,
+    d: item.completed_at
+      ? new Date(item.completed_at).toISOString().split("T")[0]
+      : "",
   }));
 }
 
@@ -15,11 +18,9 @@ export default async function FinancesPage() {
   const supabase = createClient();
 
   const now = new Date();
-  const thirtyDaysAgoDate = new Date();
-  thirtyDaysAgoDate.setDate(now.getDate() - 30);
-  const thirtyDaysAgo = thirtyDaysAgoDate.toISOString();
+  const thirtyDaysAgo = new Date(now.setDate(now.getDate() - 30)).toISOString();
 
-  // 💰 BUSCA DE DADOS
+  // 💰 BUSCA
   const { data: completedAppts } = await supabase
     .from("appointments")
     .select(`
@@ -32,11 +33,13 @@ export default async function FinancesPage() {
     .gte("completed_at", thirtyDaysAgo)
     .order("completed_at", { ascending: true });
 
-  // 🧠 DADOS LIMPOS PARA IA
-  const sanitizedData = sanitizeFinanceData(completedAppts || []);
+  const data = completedAppts || [];
+
+  // 🧠 IA (dados mínimos)
+  const sanitizedData = sanitizeFinanceData(data);
 
   const todayData = sanitizeFinanceData(
-    (completedAppts || []).filter(
+    data.filter(
       a =>
         new Date(a.completed_at!).toDateString() ===
         new Date().toDateString()
@@ -44,37 +47,33 @@ export default async function FinancesPage() {
   );
 
   // 📊 GRÁFICO (7 dias)
-  const last7Days = [...Array(7)].map((_, i) => {
+  const last7Days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    return d.toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "short",
-    });
+    return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
   }).reverse();
 
-  const chartData = last7Days.map(dateStr => {
-    const totalDay = completedAppts
-      ?.filter(
-        a =>
-          new Date(a.completed_at!).toLocaleDateString("pt-BR", {
-            day: "2-digit",
-            month: "short",
-          }) === dateStr
-      )
-      .reduce((sum, a) => sum + (Number(a.final_price) || 0), 0);
+  const chartData = last7Days.map(dateStr => ({
+    date: dateStr,
+    value:
+      data
+        .filter(
+          a =>
+            new Date(a.completed_at!).toLocaleDateString("pt-BR", {
+              day: "2-digit",
+              month: "short",
+            }) === dateStr
+        )
+        .reduce((sum, a) => sum + (Number(a.final_price) || 0), 0) || 0,
+  }));
 
-    return { date: dateStr, value: totalDay || 0 };
-  });
+  // 🧮 MÉTRICAS
+  const totalRevenue = data.reduce(
+    (acc, curr) => acc + (Number(curr.final_price) || 0),
+    0
+  );
 
-  // 🧮 CÁLCULOS
-  const totalRevenue =
-    completedAppts?.reduce(
-      (acc, curr) => acc + (Number(curr.final_price) || 0),
-      0
-    ) || 0;
-
-  const totalServices = completedAppts?.length || 0;
+  const totalServices = data.length;
 
   const ticketAverage =
     totalServices > 0 ? totalRevenue / totalServices : 0;
@@ -83,50 +82,32 @@ export default async function FinancesPage() {
     <div className="space-y-10">
       {/* HEADER */}
       <div className="border-b border-slate-200 pb-6">
-        <h1 className="text-4xl font-black text-slate-900 tracking-tighter">
-          Financeiro
-        </h1>
-        <p className="text-slate-500 font-medium italic">
-          Inteligência de faturamento e fluxo de caixa (Últimos 30 dias).
+        <h1 className="text-4xl font-black text-slate-900">Financeiro</h1>
+        <p className="text-slate-500 italic">
+          Inteligência de faturamento (30 dias)
         </p>
       </div>
 
-      {/* 🔥 IA INSIGHTS (NOVA FEATURE) */}
-      <div className="flex gap-4 mb-4">
+      {/* 🤖 IA */}
+      <div className="flex gap-4">
         <Link
-          href={{
-            pathname: "/ai",
-            query: {
-              mode: "7days",
-              data: JSON.stringify(sanitizedData),
-            },
-          }}
-          className="flex-1 p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 hover:scale-[1.02] transition-all group"
+          href={`/ai?mode=7days&data=${encodeURIComponent(
+            JSON.stringify(sanitizedData)
+          )}`}
+          className="flex-1 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 hover:scale-[1.02] transition"
         >
-          <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">
-            IA Insight
-          </p>
-          <h3 className="font-bold text-slate-900">
-            Análise Completa (7 dias) →
-          </h3>
+          <p className="text-xs font-bold text-emerald-600">IA Insight</p>
+          <h3 className="text-slate-900">Análise 7 dias →</h3>
         </Link>
 
         <Link
-          href={{
-            pathname: "/ai",
-            query: {
-              mode: "today",
-              data: JSON.stringify(todayData),
-            },
-          }}
-          className="flex-1 p-4 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 border border-slate-700 hover:scale-[1.02] transition-all"
+          href={`/ai?mode=today&data=${encodeURIComponent(
+            JSON.stringify(todayData)
+          )}`}
+          className="flex-1 p-4 rounded-2xl bg-slate-900 text-white hover:scale-[1.02] transition"
         >
-          <p className="text-[10px] font-black text-white/50 uppercase tracking-widest">
-            IA Insight
-          </p>
-          <h3 className="font-bold text-white">
-            O que rolou hoje? →
-          </h3>
+          <p className="text-xs opacity-60">IA Insight</p>
+          <h3 className="font-bold">Hoje →</h3>
         </Link>
       </div>
 
@@ -134,12 +115,10 @@ export default async function FinancesPage() {
       <FinanceChart data={chartData} />
 
       {/* 📦 CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="p-8 rounded-[2.5rem] bg-slate-900 text-white shadow-2xl">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-            Faturamento Total (30d)
-          </p>
-          <p className="text-4xl font-black mt-2 text-emerald-400 tracking-tighter">
+      <div className="grid md:grid-cols-3 gap-6">
+        <div className="p-6 rounded-2xl bg-slate-900 text-white">
+          <p className="text-xs opacity-60">Faturamento</p>
+          <p className="text-3xl font-black text-emerald-400">
             {new Intl.NumberFormat("pt-BR", {
               style: "currency",
               currency: "BRL",
@@ -147,11 +126,9 @@ export default async function FinancesPage() {
           </p>
         </div>
 
-        <div className="p-8 rounded-[2.5rem] bg-white border-2 border-slate-100 shadow-xl">
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-            Ticket Médio
-          </p>
-          <p className="text-4xl font-black text-slate-900 mt-2 tracking-tighter">
+        <div className="p-6 rounded-2xl bg-white border">
+          <p className="text-xs text-slate-500">Ticket Médio</p>
+          <p className="text-3xl font-black">
             {new Intl.NumberFormat("pt-BR", {
               style: "currency",
               currency: "BRL",
@@ -159,36 +136,32 @@ export default async function FinancesPage() {
           </p>
         </div>
 
-        <div className="p-8 rounded-[2.5rem] bg-white border-2 border-slate-100 shadow-xl">
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-            Serviços Concluídos
-          </p>
-          <p className="text-4xl font-black text-slate-900 mt-2 tracking-tighter">
-            {totalServices}
-          </p>
+        <div className="p-6 rounded-2xl bg-white border">
+          <p className="text-xs text-slate-500">Serviços</p>
+          <p className="text-3xl font-black">{totalServices}</p>
         </div>
       </div>
 
       {/* 📄 TABELA */}
-      <section className="space-y-6">
-        <h2 className="text-2xl font-black text-slate-800">
-          Extrato de Recebimentos
-        </h2>
+      <section>
+        <h2 className="text-xl font-black mb-4">Extrato</h2>
 
-        <div className="bg-white rounded-[2rem] border overflow-hidden">
-          <table className="w-full">
+        <div className="bg-white rounded-2xl border overflow-hidden">
+          <table className="w-full text-sm">
             <tbody>
-              {completedAppts?.length ? (
-                [...completedAppts].reverse().map((item, idx) => (
-                  <tr key={idx}>
-                    <td className="p-6 font-medium text-slate-600">
-                      {new Date(item.completed_at!).toLocaleDateString(
-                        "pt-BR"
-                      )}
+              {data.length ? (
+                [...data].reverse().map((item, i) => (
+                  <tr key={i} className="border-b">
+                    <td className="p-4 text-slate-600">
+                      {new Date(item.completed_at!).toLocaleDateString("pt-BR")}
                     </td>
-                    <td className="p-6 font-semibold text-slate-900">{(item.clients as any)?.name}</td>
-                    <td className="p-6 text-slate-600 italic">{(item.services as any)?.name}</td>
-                    <td className="text-right font-bold text-emerald-600">
+                    <td className="p-4 font-semibold text-slate-900">
+                      {(item.clients as any)?.name}
+                    </td>
+                    <td className="p-4 text-slate-600 italic">
+                      {(item.services as any)?.name}
+                    </td>
+                    <td className="p-4 text-right font-bold text-emerald-600">
                       {new Intl.NumberFormat("pt-BR", {
                         style: "currency",
                         currency: "BRL",
@@ -198,8 +171,8 @@ export default async function FinancesPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="p-10 text-center">
-                    Nenhum faturamento.
+                  <td colSpan={4} className="p-8 text-center text-slate-400">
+                    Nenhum faturamento
                   </td>
                 </tr>
               )}

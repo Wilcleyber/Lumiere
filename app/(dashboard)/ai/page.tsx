@@ -1,158 +1,175 @@
 "use client";
 
-import { useState, useRef, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
 function AIChatContent() {
   const [answer, setAnswer] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [contextData, setContextData] = useState<any>(null);
   const searchParams = useSearchParams();
-  const formRef = useRef<HTMLFormElement>(null);
+  const hasCalled = useRef(false);
 
-  // Efeito para capturar dados vindos do Financeiro via URL
+  // 🤖 AUTO EXEC (vindo do Financeiro)
   useEffect(() => {
     const mode = searchParams.get("mode");
     const data = searchParams.get("data");
 
-    if (mode && data) {
-      const parsedData = JSON.parse(data);
-      setContextData(parsedData);
-      
-      const prompt = mode === "7days" 
-        ? "Faça uma análise completa dos meus últimos 7 dias de faturamento." 
-        : "O que rolou hoje no meu financeiro? Me dê um resumo rápido.";
-      
-      // Dispara a análise automaticamente se vier do botão do financeiro
-      handleAskAI(prompt, parsedData);
+    if (!mode || !data || hasCalled.current) return;
+
+    hasCalled.current = true;
+
+    const parsedData = JSON.parse(data);
+
+    let prompt = "";
+
+    // 🧠 Estratégia (NOVO)
+    if (mode === "strategy") {
+      prompt = `
+Você é um consultor estratégico da Lumière (clínica premium).
+
+Dados:
+${JSON.stringify(parsedData)}
+
+Responda:
+- Serviços mais lucrativos
+- Oportunidades pouco exploradas
+- 1 estratégia prática de crescimento
+
+Seja direto, profissional e acionável.
+`;
     }
+
+    // 📊 7 dias
+    else if (mode === "7days") {
+      prompt = `
+Analise meu faturamento:
+
+${JSON.stringify(parsedData)}
+
+Responda:
+- Dia mais lucrativo
+- Faturamento total
+- 1 insight estratégico
+
+Seja direto e use emojis.
+`;
+    }
+
+    // 📅 Hoje
+    else {
+      prompt = `
+Resumo financeiro do dia:
+
+${JSON.stringify(parsedData)}
+
+Traga:
+- Resumo rápido
+- Destaque principal
+
+Seja curto e profissional.
+`;
+    }
+
+    handleAskAI(prompt);
   }, [searchParams]);
 
-  async function handleAskAI(question: string, dataToUse?: any) {
+  // 🧠 FUNÇÃO CENTRAL
+  async function handleAskAI(prompt: string) {
+    if (isLoading) return;
+
     setIsLoading(true);
     setAnswer("");
 
     try {
-      const response = await fetch("/api/ai/chat", {
+      const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [{ content: question }],
-          contextData: dataToUse || contextData, // Usa o dado da URL ou o que já está no estado
+          messages: [{ content: prompt }],
         }),
       });
 
-      const result = await response.json();
-      setAnswer(result.text || "Desculpe, não consegui processar agora.");
-    } catch (error) {
-      setAnswer("Erro ao conectar com a inteligência Lumière.");
+      const result = await res.json();
+      setAnswer(result.text || "Sem resposta.");
+    } catch {
+      setAnswer("Erro ao processar análise.");
     } finally {
       setIsLoading(false);
     }
   }
 
-  const suggestions = [
-    "Análise de faturamento semanal",
-    "Qual meu ticket médio atual?",
-    "Sugestões para aumentar vendas",
-  ];
-
   return (
-    <div className="space-y-12 max-w-4xl">
-      <div className="border-b border-slate-200 pb-6">
-        <div className="flex items-center gap-3">
-          <h1 className="text-4xl font-black text-slate-900 tracking-tighter">
-            Lumière <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-400">Intelligence</span>
-          </h1>
-          <span className="bg-slate-900 text-[10px] text-white px-2 py-1 rounded font-black tracking-widest animate-pulse">
-            AI ACTIVE
-          </span>
-        </div>
-        <p className="text-slate-500 font-medium italic mt-2">
-          Sua consultoria de negócios integrada ao seu banco de dados.
+    <div className="max-w-3xl mx-auto space-y-10 p-6">
+      
+      {/* HEADER */}
+      <div className="border-b border-slate-200 pb-4">
+        <h1 className="text-3xl font-black text-slate-900 tracking-tighter">
+          Lumière <span className="text-slate-400">Intelligence</span>
+        </h1>
+        <p className="text-sm text-slate-600">
+          Insights inteligentes do seu negócio
         </p>
       </div>
 
-      <div className="grid gap-8">
-        <section className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
-          <form 
-            ref={formRef} 
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              handleAskAI(formData.get("question") as string);
-              e.currentTarget.reset(); // Limpa o campo após enviar
-            }} 
-            className="space-y-6"
+      {/* INPUT */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const form = new FormData(e.currentTarget);
+          const question = form.get("question") as string;
+
+          if (!question.trim()) return;
+
+          const promptChat = `
+Você é o assistente Lumière, focado em clínicas de estética premium.
+
+Responda com clareza, sofisticação e objetividade.
+
+Pergunta:
+${question}
+`;
+
+          handleAskAI(promptChat);
+          e.currentTarget.reset();
+        }}
+        className="space-y-4"
+      >
+        <div className="relative">
+          <input
+            name="question"
+            placeholder="Pergunte algo sobre sua clínica..."
+            className="w-full p-5 rounded-2xl border-2 border-slate-200 text-slate-800 bg-white focus:border-slate-900 focus:outline-none"
+            required
+          />
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="absolute right-3 top-3 bottom-3 bg-slate-900 text-white px-6 rounded-xl font-bold"
           >
-            <div className="space-y-2">
-              <label className="text-sm font-black text-slate-700 uppercase tracking-widest ml-1">
-                O que você deseja saber?
-              </label>
-              <div className="relative">
-                <input
-                  name="question"
-                  required
-                  placeholder="Ex: Como foi meu desempenho essa semana?"
-                  className="w-full border-2 border-slate-100 rounded-2xl p-4 text-slate-900 font-medium focus:border-slate-900 focus:outline-none transition-all pr-16 shadow-inner bg-slate-50/50"
-                />
-                <button 
-                  disabled={isLoading}
-                  className="absolute right-2 top-2 bottom-2 bg-slate-900 hover:bg-black text-white px-4 rounded-xl transition-all active:scale-95 disabled:bg-slate-300"
-                >
-                  {isLoading ? "..." : "⚡"}
-                </button>
-              </div>
-            </div>
+            {isLoading ? "..." : "Enviar"}
+          </button>
+        </div>
+      </form>
 
-            <div className="flex flex-wrap gap-2">
-              {suggestions.map((text) => (
-                <button
-                  key={text}
-                  type="button"
-                  onClick={() => handleAskAI(text)}
-                  className="text-[11px] font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full hover:bg-slate-900 hover:text-white transition-all border border-slate-200"
-                >
-                  {text}
-                </button>
-              ))}
-            </div>
-          </form>
-        </section>
-
-        {(answer || isLoading) && (
-          <div className={`p-8 rounded-[2.5rem] transition-all duration-500 border ${
-            isLoading ? "bg-slate-50 border-slate-200 animate-pulse" : "bg-slate-900 border-slate-800 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.5)]"
-          }`}>
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-ping"></div>
-              <span className="text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">
-                Análise do Gestor
-              </span>
-            </div>
-            
-            {isLoading ? (
-              <div className="space-y-3">
-                <div className="h-3 bg-slate-200 rounded-full w-full"></div>
-                <div className="h-3 bg-slate-200 rounded-full w-5/6"></div>
-                <div className="h-3 bg-slate-200 rounded-full w-4/6"></div>
-              </div>
-            ) : (
-              <div className="text-slate-100 text-lg font-medium leading-relaxed whitespace-pre-wrap">
-                {answer}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      {/* RESPOSTA */}
+      {(answer || isLoading) && (
+        <div
+          className={`p-8 rounded-[2rem] border transition-all ${
+            isLoading
+              ? "bg-slate-50 border-slate-200 text-slate-600"
+              : "bg-slate-900 border-slate-800 text-white"
+          }`}
+        >
+          {isLoading ? "Analisando..." : answer}
+        </div>
+      )}
     </div>
   );
 }
 
-// O Next.js exige Suspense ao usar useSearchParams em Client Components
 export default function AIPage() {
   return (
-    <Suspense fallback={<div className="p-10 font-black animate-pulse">CARREGANDO INTELIGÊNCIA...</div>}>
+    <Suspense fallback={<div className="p-6">Carregando...</div>}>
       <AIChatContent />
     </Suspense>
   );
