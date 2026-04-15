@@ -2,7 +2,7 @@
 
 **A inteligência que transforma dados brutos em decisões estratégicas e agendamentos em lucro.**
 
-![Lumière Demo](./media/Demo.gif)
+![Lumière Demo](./media/Lumière.gif)
 
 ---
 
@@ -30,17 +30,23 @@ O Lumière evoluiu de um simples gestor para um ecossistema **AI-First**. Projet
             (Insights de Faturamento e Estratégia)
 
 ### 🧠 Arquitetura de Inteligência (Lumière Brain)
-Diferente de sistemas comuns, o Lumière utiliza uma **Refinaria de Contexto** (Context Sanitization). Os dados do Supabase são processados e limpos antes de chegarem ao **Gemini 2.5 Flash-Lite**, garantindo:
-- **Latência Ultrabaixa:** Respostas rápidas e precisas.
-- **Eficiência de Tokens:** Redução de 80% no consumo de dados desnecessários.
-- **Insights Reais:** A IA não apenas "conversa", ela analisa ticket médio, serviços mais lucrativos e gargalos na agenda.
+
+O Lumière opera através de uma Refinaria de Contexto (Context Sanitization) proprietária. Antes de qualquer interação com o Gemini 2.0 Flash, os dados brutos do Supabase são filtrados e estruturados em um formato ultracompacto. Isso resulta em:
+
+    Eficiência Radical: Redução de 80% no consumo de tokens, focando apenas no que é vital para a decisão.
+
+    Segurança: Anonimização de PII (Personally Identifiable Information) antes da análise externa.
+
+    Análise Multidimensional: Insights precisos sobre mix de produtos, sazonalidade e ticket médio em menos de 2 segundos.
+
+    Privacy-First: O sistema utiliza a técnica de anonimização de dados antes do processamento pela IA, garantindo que informações sensíveis dos clientes nunca saiam do ambiente seguro do Supabase.
 
 ### 🛠️ Stack Tecnológica de Elite
 
 | Tecnologia | Função |
 | :--- | :--- |
 | **Next.js 15** | Framework Fullstack (App Router & Server Actions) |
-| **Gemini 2.5 Flash** | Cérebro Analítico para Insights Financeiros e de Agenda |
+| **Gemini 2.0 Flash** | Cérebro Analítico para Insights Financeiros e de Agenda |
 | **Supabase** | Infraestrutura de Banco de Dados e Auth em Tempo Real |
 | **Tailwind CSS** | Design System Proprietário (Slate-900 Luxury Edition) |
 | **TypeScript** | Robustez e Segurança em toda a regra de negócio |

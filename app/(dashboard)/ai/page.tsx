@@ -14,85 +14,56 @@ function AIChatContent() {
     const mode = searchParams.get("mode");
     const data = searchParams.get("data");
 
-    if (!mode || !data || hasCalled.current) return;
+    if (mode && data && !hasCalled.current) {
+      hasCalled.current = true;
+      const parsedData = JSON.parse(data);
 
-    hasCalled.current = true;
+      let promptTecnico = "";
 
-    const parsedData = JSON.parse(data);
+      if (mode === "7days") {
+        promptTecnico = `Analise meu faturamento semanal. Dados: ${JSON.stringify(parsedData)}. Regras de Ouro:
+    1. NÃO mostre cálculos matemáticos (somas).
+    2. Vá direto aos destaques: Qual serviço brilhou e qual dia foi o ápice.
+    3. Use um tom executivo, curto e sofisticado.
+    4. Máximo de 3 parágrafos curtos.`;
+      } else if (mode === "today") {
+      promptTecnico = `Resumo executivo de hoje. Dados: ${JSON.stringify(parsedData)}. Diga o faturamento total e dê um insight rápido sobre o movimento. 
+    Sem contas matemáticas expostas, apenas o veredito elegante.`;
+      }
 
-    let prompt = "";
-
-    // 🧠 Estratégia (NOVO)
-    if (mode === "strategy") {
-      prompt = `
-Você é um consultor estratégico da Lumière (clínica premium).
-
-Dados:
-${JSON.stringify(parsedData)}
-
-Responda:
-- Serviços mais lucrativos
-- Oportunidades pouco exploradas
-- 1 estratégia prática de crescimento
-
-Seja direto, profissional e acionável.
-`;
+    // Passamos o prompt técnico já com os dados injetados
+      handleAskAI(promptTecnico);
     }
-
-    // 📊 7 dias
-    else if (mode === "7days") {
-      prompt = `
-Analise meu faturamento:
-
-${JSON.stringify(parsedData)}
-
-Responda:
-- Dia mais lucrativo
-- Faturamento total
-- 1 insight estratégico
-
-Seja direto e use emojis.
-`;
-    }
-
-    // 📅 Hoje
-    else {
-      prompt = `
-Resumo financeiro do dia:
-
-${JSON.stringify(parsedData)}
-
-Traga:
-- Resumo rápido
-- Destaque principal
-
-Seja curto e profissional.
-`;
-    }
-
-    handleAskAI(prompt);
   }, [searchParams]);
 
   // 🧠 FUNÇÃO CENTRAL
-  async function handleAskAI(prompt: string) {
+  async function handleAskAI(question: string) {
     if (isLoading) return;
-
     setIsLoading(true);
     setAnswer("");
 
     try {
+      const isBotaoFinanceiro = searchParams.get("data") !== null;
+
+    // Se veio do botão, mandamos a pergunta técnica. 
+    // Se veio do Input (Chat), "vestimos" a pergunta com luxo.
+      const finalPrompt = isBotaoFinanceiro 
+      ? question 
+      : `Você é a assistente Lumière para uma clínica de estética premium. Responda de forma elegante, curta e profissional à seguinte dúvida da proprietária: ${question}`;
+
       const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [{ content: prompt }],
+          messages: [{ content: finalPrompt }],
+        // Note que NÃO mandamos contextData aqui no corpo, pois ele já foi injetado no finalPrompt se necessário
         }),
       });
 
       const result = await res.json();
       setAnswer(result.text || "Sem resposta.");
     } catch {
-      setAnswer("Erro ao processar análise.");
+      setAnswer("Tive um problema ao processar sua solicitação, elegante.");
     } finally {
       setIsLoading(false);
     }

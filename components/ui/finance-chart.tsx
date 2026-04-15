@@ -12,12 +12,10 @@ import {
 } from "recharts";
 
 interface FinanceChartProps {
-  // Tornamos opcional e garantimos que se não vier nada, usamos um array vazio
   data?: { date: string; value: number }[];
 }
 
 export function FinanceChart({ data = [] }: FinanceChartProps) {
-  // Se não houver dados, mostramos um estado amigável em vez de um gráfico vazio
   if (data.length === 0) {
     return (
       <div className="h-[300px] w-full bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl flex items-center justify-center">
@@ -55,7 +53,6 @@ export function FinanceChart({ data = [] }: FinanceChartProps) {
               boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
               fontSize: '12px'
             }}
-            // Formata o valor dentro do Tooltip para Real R$
             formatter={(value) =>
   new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -66,12 +63,11 @@ export function FinanceChart({ data = [] }: FinanceChartProps) {
           <Bar 
             dataKey="value" 
             radius={[8, 8, 8, 8]} 
-            barSize={32} // Reduzi um pouco para dar mais "ar" entre as barras
+            barSize={32} 
           >
             {data.map((entry, index) => (
               <Cell 
-                key={`cell-${index}`} 
-                // A última barra (hoje) fica com destaque escuro, as outras cinza claro
+                key={`cell-${index}`}       
                 fill={index === data.length - 1 ? '#0f172a' : '#e2e8f0'} 
                 className="hover:fill-emerald-500 transition-all duration-300 cursor-pointer"
               />

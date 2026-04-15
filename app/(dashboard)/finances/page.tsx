@@ -11,6 +11,7 @@ function sanitizeFinanceData(data: any[]) {
     d: item.completed_at
       ? new Date(item.completed_at).toISOString().split("T")[0]
       : "",
+    s: (item.services as any)?.name?.substring(0, 15) || "Geral", // s = serviço (máx 15 letras)
   }));
 }
 
@@ -18,7 +19,9 @@ export default async function FinancesPage() {
   const supabase = createClient();
 
   const now = new Date();
-  const thirtyDaysAgo = new Date(now.setDate(now.getDate() - 30)).toISOString();
+  const thirtyDaysAgoDate = new Date();
+  thirtyDaysAgoDate.setDate(now.getDate() - 30);
+  const thirtyDaysAgo = thirtyDaysAgoDate.toISOString();
 
   // 💰 BUSCA
   const { data: completedAppts } = await supabase
@@ -35,7 +38,7 @@ export default async function FinancesPage() {
 
   const data = completedAppts || [];
 
-  // 🧠 IA (dados mínimos)
+  // 🧠 IA (dados enriquecidos com serviço)
   const sanitizedData = sanitizeFinanceData(data);
 
   const todayData = sanitizeFinanceData(
@@ -91,23 +94,19 @@ export default async function FinancesPage() {
       {/* 🤖 IA */}
       <div className="flex gap-4">
         <Link
-          href={`/ai?mode=7days&data=${encodeURIComponent(
-            JSON.stringify(sanitizedData)
-          )}`}
-          className="flex-1 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 hover:scale-[1.02] transition"
+          href={`/ai?mode=7days&data=${encodeURIComponent(JSON.stringify(sanitizedData))}`}
+          className="flex-1 p-6 rounded-[2rem] bg-emerald-500/10 border border-emerald-500/20 hover:scale-[1.02] transition-all group"
         >
-          <p className="text-xs font-bold text-emerald-600">IA Insight</p>
-          <h3 className="text-slate-900">Análise 7 dias →</h3>
+          <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">IA Insight</p>
+          <h3 className="text-slate-900 font-bold text-lg">Análise Semanal →</h3>
         </Link>
 
         <Link
-          href={`/ai?mode=today&data=${encodeURIComponent(
-            JSON.stringify(todayData)
-          )}`}
-          className="flex-1 p-4 rounded-2xl bg-slate-900 text-white hover:scale-[1.02] transition"
+          href={`/ai?mode=today&data=${encodeURIComponent(JSON.stringify(todayData))}`}
+          className="flex-1 p-6 rounded-[2rem] bg-slate-900 text-white hover:scale-[1.02] transition-all"
         >
-          <p className="text-xs opacity-60">IA Insight</p>
-          <h3 className="font-bold">Hoje →</h3>
+          <p className="text-[10px] font-black opacity-50 uppercase tracking-widest">IA Insight</p>
+          <h3 className="font-bold text-lg">O que rolou hoje? →</h3>
         </Link>
       </div>
 
@@ -116,13 +115,10 @@ export default async function FinancesPage() {
 
       {/* 📦 CARDS */}
       <div className="grid md:grid-cols-3 gap-6">
-        <div className="p-6 rounded-2xl bg-slate-900 text-white">
-          <p className="text-xs opacity-60">Faturamento</p>
-          <p className="text-3xl font-black text-emerald-400">
-            {new Intl.NumberFormat("pt-BR", {
-              style: "currency",
-              currency: "BRL",
-            }).format(totalRevenue)}
+        <div className="p-8 rounded-[2rem] bg-slate-900 text-white shadow-xl">
+          <p className="text-[10px] font-black opacity-40 uppercase tracking-widest">Faturamento</p>
+          <p className="text-4xl font-black text-emerald-400 tracking-tighter mt-1">
+            {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(totalRevenue)}
           </p>
         </div>
 
